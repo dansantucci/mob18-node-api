@@ -1,8 +1,15 @@
 const express = require("express");
+const firebase = require("firebase");
+const firebaseConfig = require("./config/firebase");
+
+const firebaseApp = firebase.initializeApp(firebaseConfig);
+const db = firebaseApp.firestore();
+const collUsers = db.collection("users");
 
 const app = express();
 
-const port = process.env.PORT || 3000;
+// console.log("FIREBASE =>", firebase);
+// console.log("FIREBASE CONFIG =>", firebaseConfig);
 
 app.get('/',(req, res) => {
     console.log('Default Route');
@@ -12,15 +19,31 @@ app.get('/dev/:name',(req, res) => {
     console.log('Dev Route');
     res.send("Olá DEV :D" + req.params.name);
 });
+app.get('/users/:id', (request, response, next) => {
+    if (request.params.id) {
+        collUsers.doc(request.params.id).get()
+        .then(user => {
+            response.json(user.data());
+        })
+        .catch(err => {
+            console.log("Error getting document", err);
+        });
+    }
+});
 app.get('/users', (request, response, next) => {
-    // console.log("REQUEST ==>",request);
-    // console.log("RESPONSE ==>",response);
-
+    collUsers.get().then(coll => {
+        let data = [];
+        coll.docs.map(doc => {
+            data.push(doc.data());
+        })
+        response.json(data);
+    });
     // response.sendStatus(200);
-    console.log('Users Route with JSON');
-    response.json({ success: true });
+    // console.log('Users Route with JSON');
+    // response.json({ success: true });
 });
 
+const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`App listening on port ${port}`);
 });
